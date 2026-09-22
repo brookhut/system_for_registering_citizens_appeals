@@ -58,8 +58,8 @@
                         </td>
                         <td>
                             {% if u.is_builtin %}
-                                <span class="badge bg-dark text-white" title="Учетная запись задана в .env. Защищена от удаления, отключения и изменения">
-                                    <i class="bi bi-lock-fill me-1"></i> Встроенная (.env)
+                                <span class="badge bg-dark text-white" title="Системная учетная запись. Защищена от удаления, отключения и изменения">
+                                    <i class="bi bi-lock-fill me-1"></i> Системная
                                 </span>
                             {% else %}
                                 <span class="badge bg-light text-secondary border">Пользовательская</span>
@@ -82,8 +82,8 @@
                         <td class="pe-3 text-end">
                             {% if u.is_builtin %}
                                 <!-- Встроенный superadmin защищен -->
-                                <span class="badge bg-light text-muted border py-1" title="Встроенную учетную запись нельзя изменить, отключить или удалить">
-                                    <i class="bi bi-shield-lock me-1"></i> Защищено .env
+                                <span class="badge bg-light text-muted border py-1" title="Системную учетную запись нельзя изменить, отключить или удалить">
+                                    <i class="bi bi-shield-lock me-1"></i> Системная запись
                                 </span>
                             {% else %}
                                 <div class="btn-group btn-group-sm">

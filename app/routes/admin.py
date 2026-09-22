@@ -76,7 +76,7 @@ def user_edit(user_id):
     # Built-in superadmin protection:
     # "встроенная учетная запись superadmin логин и пароль хранятся в файле .env, данную учетную запись нельзя удалить, изменить, отключить."
     if user.is_builtin:
-        flash('Встроенную учетную запись superadmin нельзя изменить через веб-интерфейс! Логин и пароль задаются в файле .env.', 'danger')
+        flash('Встроенную учетную запись superadmin нельзя изменить через веб-интерфейс.', 'danger')
         return redirect(url_for('admin.users_list'))
 
     full_name = request.form.get('full_name', '').strip()
