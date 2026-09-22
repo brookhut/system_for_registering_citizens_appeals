@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}Список обращений граждан{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-2">
+    <div>
+        <h2 class="h3 fw-bold mb-1 text-dark">Регистрация обращений граждан</h2>
+        <p class="text-muted small mb-0">Учет, отслеживание контрольных сроков и обработка обращений</p>
+    </div>
+    <div>
+        <a href="{{ url_for('appeals.create') }}" class="btn btn-primary shadow-sm d-inline-flex align-items-center gap-2 px-3 py-2">
+            <i class="bi bi-plus-circle-fill fs-5"></i>
+            <span class="fw-semibold">Добавить обращение</span>
+        </a>
+    </div>
+</div>
+
+<!-- Панель поиска и фильтров (над вкладками) -->
+<!-- "над ними поля поиска по номеру, дате регистрации, управлению, округу, Типу, тематике, по количеству дней до ответа" -->
+<div class="search-panel mb-4">
+    <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+        <h6 class="fw-bold mb-0 text-secondary d-flex align-items-center gap-2">
+            <i class="bi bi-funnel-fill text-primary"></i> Поиск и фильтрация обращений
+        </h6>
+        {% if search_number or search_reg_date or search_management_id or search_district_id or search_type_id or search_topic_id or search_deadline_filter or search_exact_days %}
+            <a href="{{ url_for('appeals.index', tab=tab) }}" class="btn btn-sm btn-link text-decoration-none text-danger p-0">
+                <i class="bi bi-x-circle me-1"></i> Сбросить все фильтры
+            </a>
+        {% endif %}
+    </div>
+
+    <form method="GET" action="{{ url_for('appeals.index') }}" class="row g-3">
+        <input type="hidden" name="tab" value="{{ tab }}">
+
+        <!-- 1. Номер обращения -->
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <label for="search_number" class="form-label">№ обращения</label>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" id="search_number" name="number" 
+                       value="{{ search_number }}" placeholder="Поиск по номеру...">
+            </div>
+        </div>
+
+        <!-- 2. Дата регистрации (европейский формат DD.MM.YYYY) -->
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <label for="search_reg_date" class="form-label">Дата регистрации</label>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                <input type="date" class="form-control" id="search_reg_date" name="reg_date" 
+                       max="{{ today.strftime('%Y-%m-%d') }}" value="{{ search_reg_date }}">
+            </div>
+            {% if search_reg_date_eur %}
+                <small class="text-muted">Выбрано: {{ search_reg_date_eur }}</small>
+            {% endif %}
+        </div>
+
+        <!-- 3. Управление -->
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <label for="filter_management_id" class="form-label">Управление</label>
+            <select class="form-select form-select-sm" id="filter_management_id" name="management_id">
+                <option value="">Все управления</option>
+                {% for m in managements %}
+                    <option value="{{ m.id }}" {% if search_management_id == m.id|string %}selected{% endif %}>
+                        {{ m.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- 4. Округ -->
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <label for="filter_district_id" class="form-label">Округ</label>
+            <select class="form-select form-select-sm" id="filter_district_id" name="district_id">
+                <option value="">Все округа</option>
+                {% for d in districts %}
+                    <option value="{{ d.id }}" {% if search_district_id == d.id|string %}selected{% endif %}>
+                        {{ d.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- 5. Тип обращения -->
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <label for="filter_type_id" class="form-label">Тип обращения</label>
+            <select class="form-select form-select-sm" id="filter_type_id" name="type_id">
+                <option value="">Все типы</option>
+                {% for t in appeal_types %}
+                    <option value="{{ t.id }}" {% if search_type_id == t.id|string %}selected{% endif %}>
+                        {{ t.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- 6. Тематика обращения -->
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <label for="filter_topic_id" class="form-label">Тематика</label>
+            <select class="form-select form-select-sm" id="filter_topic_id" name="topic_id">
+                <option value="">Все тематики</option>
+                {% for top in topics %}
+                    <option value="{{ top.id }}" {% if search_topic_id == top.id|string %}selected{% endif %}>
+                        {{ top.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- 7. Количество дней до ответа -->
+        <div class="col-12 col-sm-6 col-md-4 col-lg-4">
+            <label for="search_deadline_filter" class="form-label">Срок ответа (дней до ответа)</label>
+            <div class="input-group input-group-sm">
+                <select class="form-select" id="search_deadline_filter" name="deadline_filter">
+                    <option value="">Все сроки</option>
+                    <option value="overdue" {% if search_deadline_filter == 'overdue' %}selected{% endif %}>
+                        Просрочено (&lt; 0 дней)
+                    </option>
+                    <option value="today" {% if search_deadline_filter == 'today' %}selected{% endif %}>
+                        Истекает сегодня (0 дней)
+                    </option>
+                    <option value="1-3" {% if search_deadline_filter == '1-3' %}selected{% endif %}>
+                        Срочные (1–3 дня)
+                    </option>
+                    <option value="4-7" {% if search_deadline_filter == '4-7' %}selected{% endif %}>
+                        До 7 дней (4–7 дней)
+                    </option>
+                    <option value=">7" {% if search_deadline_filter == '>7' %}selected{% endif %}>
+                        Более 7 дней (&gt; 7 дней)
+                    </option>
+                    <option value="none" {% if search_deadline_filter == 'none' %}selected{% endif %}>
+                        Без контрольного срока
+                    </option>
+                </select>
+                <input type="number" class="form-control" name="exact_days" 
+                       placeholder="Точно дней..." value="{{ search_exact_days }}" style="max-width: 120px;"
+                       title="Точное число оставшихся дней">
+            </div>
+        </div>
+
+        <!-- Кнопки управления поиском -->
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2 d-flex align-items-end gap-2">
+            <button type="submit" class="btn btn-sm btn-primary w-100 py-1">
+                <i class="bi bi-search me-1"></i> Найти
+            </button>
+            <a href="{{ url_for('appeals.index', tab=tab) }}" class="btn btn-sm btn-outline-secondary py-1" title="Сбросить фильтры">
+                <i class="bi bi-arrow-counterclockwise"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Вкладки: 1. "В работе", 2. "Закрытые обращения" -->
+<ul class="nav nav-tabs mb-3 border-bottom" id="appealsTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if tab == 'active' %}active{% endif %} d-flex align-items-center gap-2"
+           href="{{ url_for('appeals.index', tab='active', number=search_number, reg_date=search_reg_date, management_id=search_management_id, district_id=search_district_id, type_id=search_type_id, topic_id=search_topic_id, deadline_filter=search_deadline_filter, exact_days=search_exact_days) }}">
+            <i class="bi bi-clock-history text-primary"></i>
+            <span>В работе</span>
+            <span class="badge rounded-pill {% if tab == 'active' %}bg-primary{% else %}bg-secondary{% endif %}">
+                {{ active_count }}
+            </span>
+        </a>
+    </li>
+    <li class="nav-item" role="presentation">
+        <a class="nav-link {% if tab == 'closed' %}active{% endif %} d-flex align-items-center gap-2"
+           href="{{ url_for('appeals.index', tab='closed', number=search_number, reg_date=search_reg_date, management_id=search_management_id, district_id=search_district_id, type_id=search_type_id, topic_id=search_topic_id, deadline_filter=search_deadline_filter, exact_days=search_exact_days) }}">
+            <i class="bi bi-check2-circle text-success"></i>
+            <span>Закрытые обращения</span>
+            <span class="badge rounded-pill {% if tab == 'closed' %}bg-success{% else %}bg-secondary{% endif %}">
+                {{ closed_count }}
+            </span>
+        </a>
+    </li>
+</ul>
+
+<!-- Таблица обращений -->
+<!-- "Отображаемая информация на главной странице:
+     Номер обращения, Округ, Управление, Тип обращения, Состоит на обслуживании, Срок ответа в количестве дней" -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-0">
+        {% if appeals %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col" class="ps-3 py-3" style="width: 170px;">Номер обращения</th>
+                        <th scope="col" class="py-3">Округ</th>
+                        <th scope="col" class="py-3">Управление</th>
+                        <th scope="col" class="py-3">Тип обращения</th>
+                        <th scope="col" class="text-center py-3" style="width: 170px;">Состоит на обслуживании</th>
+                        <th scope="col" class="text-center py-3" style="width: 180px;">Срок ответа в количестве дней</th>
+                        <th scope="col" class="text-end pe-3 py-3" style="width: 100px;">Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in appeals %}
+                    <tr class="clickable-row" data-href="{{ url_for('appeals.detail', appeal_id=a.id) }}" title="Нажмите, чтобы открыть карточку обращения">
+                        <!-- 1. Номер обращения + дата регистрации -->
+                        <td class="ps-3">
+                            <div class="fw-bold text-primary">{{ a.number }}</div>
+                            <small class="text-muted" title="Дата регистрации (европейский стандарт)">
+                                <i class="bi bi-calendar-event me-1"></i>{{ a.reg_date_european }}
+                            </small>
+                        </td>
+
+                        <!-- 2. Округ -->
+                        <td>
+                            <span class="fw-medium text-dark">{{ a.district.name }}</span>
+                        </td>
+
+                        <!-- 3. Управление -->
+                        <td>
+                            {% if a.management %}
+                                <span class="text-dark">{{ a.management.name }}</span>
+                            {% else %}
+                                <span class="text-muted fst-italic">Не указано</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 4. Тип обращения -->
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ a.appeal_type.name }}</span>
+                            {% if a.topic %}
+                                <div class="small text-muted text-truncate" style="max-width: 260px;" title="{{ a.topic.name }}">
+                                    {{ a.topic.name }}
+                                </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- 5. Состоит на обслуживании (Да / Нет) -->
+                        <td class="text-center">
+                            {% if a.is_serviced %}
+                                <span class="badge badge-serviced-yes px-3 py-2 rounded-pill">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Да
+                                </span>
+                            {% else %}
+                                <span class="badge badge-serviced-no px-3 py-2 rounded-pill">
+                                    <i class="bi bi-x-circle-fill me-1"></i> Нет
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- 6. Срок ответа в количестве дней -->
+                        <td class="text-center">
+                            {% if a.status == 'Закрыто' %}
+                                <span class="badge badge-status-closed rounded-pill px-3 py-1">
+                                    <i class="bi bi-check2 me-1"></i> Закрыто
+                                </span>
+                                {% if a.closed_at %}
+                                    <div class="small text-muted">{{ a.closed_at.strftime('%d.%m.%Y') }}</div>
+                                {% endif %}
+                            {% else %}
+                                {% set days = a.days_until_deadline %}
+                                {% if days is not none %}
+                                    {% if days < 0 %}
+                                        <span class="badge badge-days-urgent rounded-pill px-2 py-1" title="Контрольный срок: {{ a.deadline_date_european }}">
+                                            <i class="bi bi-exclamation-triangle-fill me-1"></i> Просрочено на {{ days|abs }} дн.
+                                        </span>
+                                    {% elif days == 0 %}
+                                        <span class="badge badge-days-warning rounded-pill px-2 py-1" title="Контрольный срок: {{ a.deadline_date_european }}">
+                                            <i class="bi bi-hourglass-split me-1"></i> Сегодня (0 дн.)
+                                        </span>
+                                    {% elif days <= 3 %}
+                                        <span class="badge badge-days-warning rounded-pill px-2 py-1" title="Контрольный срок: {{ a.deadline_date_european }}">
+                                            <i class="bi bi-clock-history me-1"></i> {{ days }} дн.
+                                        </span>
+                                    {% else %}
+                                        <span class="badge badge-days-ok rounded-pill px-2 py-1" title="Контрольный срок: {{ a.deadline_date_european }}">
+                                            <i class="bi bi-calendar-check me-1"></i> {{ days }} дн.
+                                        </span>
+                                    {% endif %}
+                                    <div class="small text-muted">{{ a.deadline_date_european }}</div>
+                                {% else %}
+                                    <span class="badge badge-days-none rounded-pill px-2 py-1">
+                                        Без срока
+                                    </span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+
+                        <!-- Действие (кнопка перехода в карточку) -->
+                        <td class="text-end pe-3">
+                            <a href="{{ url_for('appeals.detail', appeal_id=a.id) }}" 
+                               class="btn btn-sm btn-outline-primary" title="Открыть карточку обращения">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-5 text-center">
+            <div class="display-6 text-muted mb-3"><i class="bi bi-inbox"></i></div>
+            <h5 class="fw-bold text-secondary">Обращения не найдены</h5>
+            <p class="text-muted small mb-3">
+                {% if search_number or search_reg_date or search_management_id or search_district_id or search_type_id or search_topic_id or search_deadline_filter or search_exact_days %}
+                    По заданным критериям фильтрации обращений нет. Попробуйте сбросить фильтры.
+                {% else %}
+                    В этой вкладке пока нет обращений.
+                {% endif %}
+            </p>
+            {% if search_number or search_reg_date or search_management_id or search_district_id or search_type_id or search_topic_id or search_deadline_filter or search_exact_days %}
+                <a href="{{ url_for('appeals.index', tab=tab) }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Сбросить фильтры
+                </a>
+            {% else %}
+                <a href="{{ url_for('appeals.create') }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i> Добавить первое обращение
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

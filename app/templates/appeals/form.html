@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}Добавление обращения — Регистрация обращений граждан{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ url_for('appeals.index') }}" class="btn btn-sm btn-outline-secondary" title="Назад к списку">
+                        <i class="bi bi-arrow-left"></i>
+                    </a>
+                    <h5 class="mb-0 fw-bold text-dark">Новое обращение гражданина</h5>
+                </div>
+                <div>
+                    <span class="badge badge-status-active px-3 py-2 rounded-pill">
+                        <i class="bi bi-clock-history me-1"></i> Статус: В работе
+                    </span>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('appeals.create') }}" id="appealForm" novalidate>
+                    
+                    <!-- Секция: Основные данные регистрации -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-info-circle me-1"></i> Основные данные регистрации
+                        </h6>
+                        <div class="row g-3">
+                            <!-- 1. Дата регистрации (не может быть больше текущей даты, формат европейский, время не отображать, всегда заполняется) -->
+                            <div class="col-12 col-md-4">
+                                <label for="reg_date" class="form-label">
+                                    Дата регистрации <span class="required-asterisk">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                                    <input type="date" class="form-control" id="reg_date" name="reg_date"
+                                           max="{{ today.strftime('%Y-%m-%d') }}"
+                                           value="{{ form_data.get('reg_date', today.strftime('%Y-%m-%d')) }}"
+                                           required>
+                                </div>
+                                <small class="text-muted">Европейский формат (ДД.ММ.ГГГГ). Не позднее {{ today.strftime('%d.%m.%Y') }}.</small>
+                            </div>
+
+                            <!-- 2. № обращения (из внешней системы, всегда заполняется) -->
+                            <div class="col-12 col-md-4">
+                                <label for="number" class="form-label">
+                                    № обращения (из внешней системы) <span class="required-asterisk">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-hash"></i></span>
+                                    <input type="text" class="form-control" id="number" name="number"
+                                           value="{{ form_data.get('number', '') }}"
+                                           placeholder="Например, ОГ-2026-00412" required>
+                                </div>
+                                <small class="text-muted">Регистрационный номер из внешней системы.</small>
+                            </div>
+
+                            <!-- 3. Источник поступления (справочник, всегда заполняется) -->
+                            <div class="col-12 col-md-4">
+                                <label for="source_id" class="form-label">
+                                    Источник поступления <span class="required-asterisk">*</span>
+                                </label>
+                                <select class="form-select" id="source_id" name="source_id" required>
+                                    <option value="">-- Выберите источник --</option>
+                                    {% for s in sources %}
+                                        <option value="{{ s.id }}" {% if form_data.get('source_id')|string == s.id|string %}selected{% endif %}>
+                                            {{ s.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Секция: Территориальная привязка и зависимости -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+                            <h6 class="fw-bold text-primary mb-0">
+                                <i class="bi bi-geo-alt me-1"></i> Территориальная принадлежность
+                            </h6>
+                            <small class="text-muted">В управление может входить несколько округов и участков</small>
+                        </div>
+                        <div class="row g-3">
+                            <!-- 5. Управление (справочник, опционально) -->
+                            <div class="col-12 col-md-4">
+                                <label for="management_id" class="form-label">
+                                    Управление <small class="text-muted fw-normal">(не обязательно)</small>
+                                </label>
+                                <select class="form-select" id="management_id" name="management_id">
+                                    <option value="">-- Не выбрано --</option>
+                                    {% for m in managements %}
+                                        <option value="{{ m.id }}" {% if form_data.get('management_id')|string == m.id|string %}selected{% endif %}>
+                                            {{ m.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Фильтрует связанные округа и участки</small>
+                            </div>
+
+                            <!-- 4. Округ (справочник, всегда заполняется) -->
+                            <div class="col-12 col-md-4">
+                                <label for="district_id" class="form-label">
+                                    Округ <span class="required-asterisk">*</span>
+                                </label>
+                                <select class="form-select" id="district_id" name="district_id" required>
+                                    <option value="">-- Выберите округ --</option>
+                                    {% for d in districts %}
+                                        <option value="{{ d.id }}" {% if form_data.get('district_id')|string == d.id|string %}selected{% endif %}>
+                                            {{ d.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- 6. Участок (справочник, опционально) -->
+                            <div class="col-12 col-md-4">
+                                <label for="plot_id" class="form-label">
+                                    Участок <small class="text-muted fw-normal">(не обязательно)</small>
+                                </label>
+                                <select class="form-select" id="plot_id" name="plot_id">
+                                    <option value="">-- Не выбрано --</option>
+                                    {% for p in plots %}
+                                        <option value="{{ p.id }}" {% if form_data.get('plot_id')|string == p.id|string %}selected{% endif %}>
+                                            {{ p.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Секция: Классификация и параметры обращения -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-tags me-1"></i> Классификация обращения
+                        </h6>
+                        <div class="row g-3">
+                            <!-- 8. Тип обращения (справочник, всегда заполняется) -->
+                            <div class="col-12 col-md-4">
+                                <label for="appeal_type_id" class="form-label">
+                                    Тип обращения <span class="required-asterisk">*</span>
+                                </label>
+                                <select class="form-select" id="appeal_type_id" name="appeal_type_id" required>
+                                    <option value="">-- Выберите тип --</option>
+                                    {% for t in appeal_types %}
+                                        <option value="{{ t.id }}" {% if form_data.get('appeal_type_id')|string == t.id|string %}selected{% endif %}>
+                                            {{ t.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- 9. Тематика обращения (справочник, всегда заполняется) -->
+                            <div class="col-12 col-md-4">
+                                <label for="topic_id" class="form-label">
+                                    Тематика обращения <span class="required-asterisk">*</span>
+                                </label>
+                                <select class="form-select" id="topic_id" name="topic_id" required>
+                                    <option value="">-- Выберите тематику --</option>
+                                    {% for top in topics %}
+                                        <option value="{{ top.id }}" {% if form_data.get('topic_id')|string == top.id|string %}selected{% endif %}>
+                                            {{ top.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- 7. Пол заявителя (мужской, женский, опционально) -->
+                            <div class="col-12 col-md-4">
+                                <label for="applicant_gender" class="form-label">
+                                    Пол заявителя <small class="text-muted fw-normal">(не обязательно)</small>
+                                </label>
+                                <select class="form-select" id="applicant_gender" name="applicant_gender">
+                                    <option value="">-- Не указан --</option>
+                                    <option value="мужской" {% if form_data.get('applicant_gender') == 'мужской' %}selected{% endif %}>
+                                        Мужской
+                                    </option>
+                                    <option value="женский" {% if form_data.get('applicant_gender') == 'женский' %}selected{% endif %}>
+                                        Женский
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- 10. Обоснованность (обоснован, не обоснован, опционально) -->
+                            <div class="col-12 col-md-4">
+                                <label for="validity" class="form-label">
+                                    Обоснованность <small class="text-muted fw-normal">(не обязательно)</small>
+                                </label>
+                                <select class="form-select" id="validity" name="validity">
+                                    <option value="">-- Не определена --</option>
+                                    <option value="обоснован" {% if form_data.get('validity') == 'обоснован' %}selected{% endif %}>
+                                        Обоснован
+                                    </option>
+                                    <option value="не обоснован" {% if form_data.get('validity') == 'не обоснован' %}selected{% endif %}>
+                                        Не обоснован
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- 11. Повторность (Первичное, Повторное, Многократное, опционально) -->
+                            <div class="col-12 col-md-4">
+                                <label for="recurrence" class="form-label">
+                                    Повторность <small class="text-muted fw-normal">(не обязательно)</small>
+                                </label>
+                                <select class="form-select" id="recurrence" name="recurrence">
+                                    <option value="">-- Не указана --</option>
+                                    <option value="Первичное" {% if form_data.get('recurrence') == 'Первичное' %}selected{% endif %}>
+                                        Первичное
+                                    </option>
+                                    <option value="Повторное" {% if form_data.get('recurrence') == 'Повторное' %}selected{% endif %}>
+                                        Повторное
+                                    </option>
+                                    <option value="Многократное" {% if form_data.get('recurrence') == 'Многократное' %}selected{% endif %}>
+                                        Многократное
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- 12. Результат рассмотрения (справочник, опционально) -->
+                            <div class="col-12 col-md-4">
+                                <label for="result_id" class="form-label">
+                                    Результат рассмотрения <small class="text-muted fw-normal">(не обязательно)</small>
+                                </label>
+                                <select class="form-select" id="result_id" name="result_id">
+                                    <option value="">-- Не указан --</option>
+                                    {% for r in results %}
+                                        <option value="{{ r.id }}" {% if form_data.get('result_id')|string == r.id|string %}selected{% endif %}>
+                                            {{ r.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Секция: Контроль сроков и обслуживание -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-stopwatch me-1"></i> Контрольные сроки и обслуживание
+                        </h6>
+                        <div class="row g-3 align-items-center">
+                            <!-- 13. Контрольные сроки (дата когда должен поступить ответ) -->
+                            <div class="col-12 col-md-6">
+                                <label for="deadline_date" class="form-label">
+                                    Контрольные сроки <small class="text-muted fw-normal">(дата поступления ответа)</small>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-alarm"></i></span>
+                                    <input type="date" class="form-control" id="deadline_date" name="deadline_date"
+                                           value="{{ form_data.get('deadline_date', '') }}">
+                                </div>
+                                <small class="text-muted">Дата, когда по данному обращению в систему должен поступить ответ.</small>
+                            </div>
+
+                            <!-- 14. Не состоит на обслуживании (чекбокс) -->
+                            <div class="col-12 col-md-6">
+                                <div class="form-check mt-3 p-3 bg-light rounded border">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" id="not_serviced" name="not_serviced"
+                                           {% if form_data.get('not_serviced') %}checked{% endif %}>
+                                    <label class="form-check-label fw-semibold text-dark" for="not_serviced">
+                                        Не состоит на обслуживании
+                                    </label>
+                                    <div class="text-muted small ps-4 ms-2">
+                                        Если отмечено, в списке обращений будет указано «Состоит на обслуживании: Нет».
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 15. Комментарий (поле может не заполняться) -->
+                    <div class="mb-4">
+                        <label for="comment" class="form-label">
+                            Комментарий <small class="text-muted fw-normal">(не обязательно)</small>
+                        </label>
+                        <textarea class="form-control" id="comment" name="comment" rows="3"
+                                  placeholder="Дополнительные примечания или пояснения по обращению...">{{ form_data.get('comment', '') }}</textarea>
+                    </div>
+
+                    <!-- Кнопки отправки формы -->
+                    <div class="d-flex justify-content-between align-items-center border-top pt-4">
+                        <a href="{{ url_for('appeals.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i> Отмена
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">
+                            <i class="bi bi-check2-circle me-1"></i> Зарегистрировать обращение
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

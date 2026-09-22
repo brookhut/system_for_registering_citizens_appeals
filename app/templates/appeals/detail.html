@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+
+{% block title %}Карточка обращения №{{ appeal.number }} — Регистрация обращений граждан{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+
+        <!-- Статусный баннер, если обращение закрыто -->
+        {% if appeal.is_closed %}
+        <div class="alert alert-secondary border shadow-sm d-flex align-items-center justify-content-between p-3 mb-4" role="alert">
+            <div class="d-flex align-items-center gap-3">
+                <i class="bi bi-lock-fill fs-3 text-secondary"></i>
+                <div>
+                    <h6 class="alert-heading fw-bold mb-1 text-dark">
+                        Обращение закрыто (редактирование заблокировано)
+                    </h6>
+                    <div class="small text-muted">
+                        Дата и время закрытия: <strong>{{ appeal.closed_at_formatted }}</strong>
+                        {% if appeal.closed_by %}
+                            | Закрыл: <strong>{{ appeal.closed_by.full_name }}</strong> (@{{ appeal.closed_by.username }})
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div>
+                <span class="badge bg-secondary fs-6 px-3 py-2 rounded-pill">
+                    <i class="bi bi-check2-all me-1"></i> Закрыто
+                </span>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ url_for('appeals.index') }}" class="btn btn-sm btn-outline-secondary" title="Назад к списку">
+                        <i class="bi bi-arrow-left"></i>
+                    </a>
+                    <div>
+                        <h5 class="mb-0 fw-bold text-dark">
+                            Карточка обращения № {{ appeal.number }}
+                        </h5>
+                        <small class="text-muted">
+                            Дата регистрации: <strong>{{ appeal.reg_date_european }}</strong>
+                        </small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    {% if not appeal.is_closed %}
+                        <span class="badge badge-status-active px-3 py-2 rounded-pill">
+                            <i class="bi bi-clock-history me-1"></i> В работе
+                        </span>
+
+                        <!-- Кнопка закрыть обращение -->
+                        <button type="button" class="btn btn-sm btn-danger d-inline-flex align-items-center gap-1 shadow-sm"
+                                data-bs-toggle="modal" data-bs-target="#closeAppealModal">
+                            <i class="bi bi-lock-fill"></i>
+                            <span>Закрыть обращение</span>
+                        </button>
+                    {% else %}
+                        <span class="badge badge-status-closed px-3 py-2 rounded-pill">
+                            <i class="bi bi-check2-all me-1"></i> Закрыто
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+
+                <!-- Метаданные аудита: кто добавил запись и когда -->
+                <div class="p-3 mb-4 bg-light rounded border small">
+                    <div class="row g-2">
+                        <div class="col-12 col-md-6">
+                            <i class="bi bi-person-plus text-primary me-1"></i>
+                            <strong>Создал:</strong> {{ appeal.created_by.full_name }} (@{{ appeal.created_by.username }})
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <i class="bi bi-clock-history text-primary me-1"></i>
+                            <strong>Дата создания в системе:</strong> {{ appeal.created_at_formatted }}
+                        </div>
+                        {% if appeal.is_closed %}
+                        <div class="col-12 col-md-6 border-top pt-2 mt-2">
+                            <i class="bi bi-person-check text-success me-1"></i>
+                            <strong>Закрыл:</strong> {{ appeal.closed_by.full_name if appeal.closed_by else '—' }}
+                        </div>
+                        <div class="col-12 col-md-6 border-top pt-2 mt-2">
+                            <i class="bi bi-calendar-check text-success me-1"></i>
+                            <strong>Дата закрытия:</strong> {{ appeal.closed_at_formatted }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Форма просмотра / редактирования -->
+                <form method="POST" action="{{ url_for('appeals.edit', appeal_id=appeal.id) }}" id="appealEditForm">
+                    
+                    <!-- Секция: Основные данные -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-info-circle me-1"></i> Основные данные регистрации
+                        </h6>
+                        <div class="row g-3">
+                            <!-- Дата регистрации (не может быть больше текущей даты, европейский стандарт DD.MM.YYYY, без времени) -->
+                            <div class="col-12 col-md-4">
+                                <label for="reg_date" class="form-label">
+                                    Дата регистрации <span class="required-asterisk">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                                    <input type="date" class="form-control {% if appeal.is_closed %}readonly-field{% endif %}" 
+                                           id="reg_date" name="reg_date"
+                                           max="{{ today.strftime('%Y-%m-%d') }}"
+                                           value="{{ appeal.reg_date.strftime('%Y-%m-%d') if appeal.reg_date else '' }}"
+                                           {% if appeal.is_closed %}readonly disabled{% else %}required{% endif %}>
+                                </div>
+                                <small class="text-muted">Европейский формат (ДД.ММ.ГГГГ): {{ appeal.reg_date_european }}</small>
+                            </div>
+
+                            <!-- № обращения (из внешней системы) -->
+                            <div class="col-12 col-md-4">
+                                <label for="number" class="form-label">
+                                    № обращения (из внешней системы) <span class="required-asterisk">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-hash"></i></span>
+                                    <input type="text" class="form-control {% if appeal.is_closed %}readonly-field{% endif %}" 
+                                           id="number" name="number" value="{{ appeal.number }}"
+                                           {% if appeal.is_closed %}readonly disabled{% else %}required{% endif %}>
+                                </div>
+                            </div>
+
+                            <!-- Источник поступления -->
+                            <div class="col-12 col-md-4">
+                                <label for="source_id" class="form-label">
+                                    Источник поступления <span class="required-asterisk">*</span>
+                                </label>
+                                <select class="form-select {% if appeal.is_closed %}readonly-field{% endif %}" 
+                                        id="source_id" name="source_id"
+                                        {% if appeal.is_closed %}disabled{% else %}required{% endif %}>
+                                    {% for s in sources %}
+                                        <option value="{{ s.id }}" {% if appeal.source_id == s.id %}selected{% endif %}>
+                                            {{ s.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Секция: Территориальная привязка -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+                            <h6 class="fw-bold text-primary mb-0">
+                                <i class="bi bi-geo-alt me-1"></i> Территориальная принадлежность
+                            </h6>
+                            <small class="text-muted">В управление может входить несколько округов и участков</small>
+                        </div>
+                        <div class="row g-3">
+                            <!-- Управление (опционально) -->
+                            <div class="col-12 col-md-4">
+                                <label for="management_id" class="form-label">
+                                    Управление <small class="text-muted fw-normal">(не обязательно)</small>
+                                </label>
+                                <select class="form-select {% if appeal.is_closed %}readonly-field{% endif %}" 
+                                        id="management_id" name="management_id"
+                                        {% if appeal.is_closed %}disabled{% endif %}>
+                                    <option value="">-- Не выбрано --</option>
+                                    {% for m in managements %}
+                                        <option value="{{ m.id }}" {% if appeal.management_id == m.id %}selected{% endif %}>
+                                            {{ m.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Округ (всегда заполняется) -->
+                            <div class="col-12 col-md-4">
+                                <label for="district_id" class="form-label">
+                                    Округ <span class="required-asterisk">*</span>
+                                </label>
+                                <select class="form-select {% if appeal.is_closed %}readonly-field{% endif %}" 
+                                        id="district_id" name="district_id"
+                                        {% if appeal.is_closed %}disabled{% else %}required{% endif %}>
+                                    <option value="">-- Выберите округ --</option>
+                                    {% for d in districts %}
+                                        <option value="{{ d.id }}" {% if appeal.district_id == d.id %}selected{% endif %}>
+                                            {{ d.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Участок (опционально) -->
+                            <div class="col-12 col-md-4">
+                                <label for="plot_id" class="form-label">
+                                    Участок <small class="text-muted fw-normal">(не обязательно)</small>
+                                </label>
+                                <select class="form-select {% if appeal.is_closed %}readonly-field{% endif %}" 
+                                        id="plot_id" name="plot_id"
+                                        {% if appeal.is_closed %}disabled{% endif %}>
+                                    <option value="">-- Не выбрано --</option>
+                                    {% for p in plots %}
+                                        <option value="{{ p.id }}" {% if appeal.plot_id == p.id %}selected{% endif %}>
+                                            {{ p.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Секция: Классификация обращения -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-tags me-1"></i> Классификация обращения
+                        </h6>
+                        <div class="row g-3">
+                            <!-- Тип обращения (всегда заполняется) -->
+                            <div class="col-12 col-md-4">
+                                <label for="appeal_type_id" class="form-label">
+                                    Тип обращения <span class="required-asterisk">*</span>
+                                </label>
+                                <select class="form-select {% if appeal.is_closed %}readonly-field{% endif %}" 
+                                        id="appeal_type_id" name="appeal_type_id"
+                                        {% if appeal.is_closed %}disabled{% else %}required{% endif %}>
+                                    {% for t in appeal_types %}
+                                        <option value="{{ t.id }}" {% if appeal.appeal_type_id == t.id %}selected{% endif %}>
+                                            {{ t.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Тематика обращения (всегда заполняется) -->
+                            <div class="col-12 col-md-4">
+                                <label for="topic_id" class="form-label">
+                                    Тематика обращения <span class="required-asterisk">*</span>
+                                </label>
+                                <select class="form-select {% if appeal.is_closed %}readonly-field{% endif %}" 
+                                        id="topic_id" name="topic_id"
+                                        {% if appeal.is_closed %}disabled{% else %}required{% endif %}>
+                                    {% for top in topics %}
+                                        <option value="{{ top.id }}" {% if appeal.topic_id == top.id %}selected{% endif %}>
+                                            {{ top.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Пол заявителя (мужской, женский, опционально) -->
+                            <div class="col-12 col-md-4">
+                                <label for="applicant_gender" class="form-label">
+                                    Пол заявителя <small class="text-muted fw-normal">(не обязательно)</small>
+                                </label>
+                                <select class="form-select {% if appeal.is_closed %}readonly-field{% endif %}" 
+                                        id="applicant_gender" name="applicant_gender"
+                                        {% if appeal.is_closed %}disabled{% endif %}>
+                                    <option value="">-- Не указан --</option>
+                                    <option value="мужской" {% if appeal.applicant_gender == 'мужской' %}selected{% endif %}>
+                                        Мужской
+                                    </option>
+                                    <option value="женский" {% if appeal.applicant_gender == 'женский' %}selected{% endif %}>
+                                        Женский
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Обоснованность (обоснован, не обоснован, опционально) -->
+                            <div class="col-12 col-md-4">
+                                <label for="validity" class="form-label">
+                                    Обоснованность <small class="text-muted fw-normal">(не обязательно)</small>
+                                </label>
+                                <select class="form-select {% if appeal.is_closed %}readonly-field{% endif %}" 
+                                        id="validity" name="validity"
+                                        {% if appeal.is_closed %}disabled{% endif %}>
+                                    <option value="">-- Не определена --</option>
+                                    <option value="обоснован" {% if appeal.validity == 'обоснован' %}selected{% endif %}>
+                                        Обоснован
+                                    </option>
+                                    <option value="не обоснован" {% if appeal.validity == 'не обоснован' %}selected{% endif %}>
+                                        Не обоснован
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Повторность (Первичное, Повторное, Многократное, опционально) -->
+                            <div class="col-12 col-md-4">
+                                <label for="recurrence" class="form-label">
+                                    Повторность <small class="text-muted fw-normal">(не обязательно)</small>
+                                </label>
+                                <select class="form-select {% if appeal.is_closed %}readonly-field{% endif %}" 
+                                        id="recurrence" name="recurrence"
+                                        {% if appeal.is_closed %}disabled{% endif %}>
+                                    <option value="">-- Не указана --</option>
+                                    <option value="Первичное" {% if appeal.recurrence == 'Первичное' %}selected{% endif %}>
+                                        Первичное
+                                    </option>
+                                    <option value="Повторное" {% if appeal.recurrence == 'Повторное' %}selected{% endif %}>
+                                        Повторное
+                                    </option>
+                                    <option value="Многократное" {% if appeal.recurrence == 'Многократное' %}selected{% endif %}>
+                                        Многократное
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Результат рассмотрения (справочник, опционально) -->
+                            <div class="col-12 col-md-4">
+                                <label for="result_id" class="form-label">
+                                    Результат рассмотрения <small class="text-muted fw-normal">(не обязательно)</small>
+                                </label>
+                                <select class="form-select {% if appeal.is_closed %}readonly-field{% endif %}" 
+                                        id="result_id" name="result_id"
+                                        {% if appeal.is_closed %}disabled{% endif %}>
+                                    <option value="">-- Не указан --</option>
+                                    {% for r in results %}
+                                        <option value="{{ r.id }}" {% if appeal.result_id == r.id %}selected{% endif %}>
+                                            {{ r.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Секция: Контроль сроков и обслуживание -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-stopwatch me-1"></i> Контрольные сроки и обслуживание
+                        </h6>
+                        <div class="row g-3 align-items-center">
+                            <!-- Контрольные сроки -->
+                            <div class="col-12 col-md-6">
+                                <label for="deadline_date" class="form-label">
+                                    Контрольные сроки <small class="text-muted fw-normal">(дата поступления ответа)</small>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-alarm"></i></span>
+                                    <input type="date" class="form-control {% if appeal.is_closed %}readonly-field{% endif %}" 
+                                           id="deadline_date" name="deadline_date"
+                                           value="{{ appeal.deadline_date.strftime('%Y-%m-%d') if appeal.deadline_date else '' }}"
+                                           {% if appeal.is_closed %}readonly disabled{% endif %}>
+                                </div>
+                                {% if appeal.deadline_date %}
+                                    <div class="mt-1 small">
+                                        Европейский формат: <strong>{{ appeal.deadline_date_european }}</strong>
+                                        {% set days = appeal.days_until_deadline %}
+                                        {% if not appeal.is_closed %}
+                                            {% if days < 0 %}
+                                                <span class="text-danger fw-bold">(Просрочено на {{ days|abs }} дн.)</span>
+                                            {% elif days == 0 %}
+                                                <span class="text-warning fw-bold">(Истекает сегодня!)</span>
+                                            {% else %}
+                                                <span class="text-success fw-semibold">(Осталось {{ days }} дн.)</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <small class="text-muted">Контрольный срок не установлен.</small>
+                                {% endif %}
+                            </div>
+
+                            <!-- Не состоит на обслуживании (чекбокс) -->
+                            <div class="col-12 col-md-6">
+                                <div class="form-check mt-3 p-3 bg-light rounded border">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" id="not_serviced" name="not_serviced"
+                                           {% if appeal.not_serviced %}checked{% endif %}
+                                           {% if appeal.is_closed %}disabled{% endif %}>
+                                    <label class="form-check-label fw-semibold text-dark" for="not_serviced">
+                                        Не состоит на обслуживании
+                                    </label>
+                                    <div class="text-muted small ps-4 ms-2">
+                                        В общем списке отображается:
+                                        {% if appeal.is_serviced %}
+                                            <span class="badge badge-serviced-yes">Состоит: Да</span>
+                                        {% else %}
+                                            <span class="badge badge-serviced-no">Состоит: Нет</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Комментарий (опционально) -->
+                    <div class="mb-4">
+                        <label for="comment" class="form-label">
+                            Комментарий <small class="text-muted fw-normal">(не обязательно)</small>
+                        </label>
+                        <textarea class="form-control {% if appeal.is_closed %}readonly-field{% endif %}" 
+                                  id="comment" name="comment" rows="3"
+                                  {% if appeal.is_closed %}readonly disabled{% endif %}
+                                  placeholder="Дополнительные примечания...">{{ appeal.comment or '' }}</textarea>
+                    </div>
+
+                    <!-- Нижняя панель действий -->
+                    <div class="d-flex justify-content-between align-items-center border-top pt-4">
+                        <a href="{{ url_for('appeals.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Вернуться к списку
+                        </a>
+                        {% if not appeal.is_closed %}
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#closeAppealModal">
+                                    <i class="bi bi-lock-fill me-1"></i> Закрыть обращение
+                                </button>
+                                <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                                    <i class="bi bi-check-lg me-1"></i> Сохранить изменения
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения закрытия обращения -->
+<!-- "Кнопка закрыть обращение, после нажатия на нее редактирование карточки не возможно, в бд записывается текущая дата закрытия, статус меняется на "Закрыто"" -->
+{% if not appeal.is_closed %}
+<div class="modal fade" id="closeAppealModal" tabindex="-1" aria-labelledby="closeAppealModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold" id="closeAppealModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> Подтверждение закрытия обращения
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="mb-3">
+                    Вы собираетесь закрыть обращение <strong>№ {{ appeal.number }}</strong>.
+                </p>
+                <div class="alert alert-warning mb-0 small">
+                    <i class="bi bi-shield-lock-fill me-1"></i>
+                    <strong>Внимание:</strong> после нажатия кнопки <em>«Закрыть обращение»</em> редактирование карточки станет
+                    <strong>невозможным</strong>. В базу данных запишется текущая дата и время закрытия, а статус изменится на «Закрыто».
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                <form method="POST" action="{{ url_for('appeals.close_appeal', appeal_id=appeal.id) }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-lock-fill me-1"></i> Закрыть обращение
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
