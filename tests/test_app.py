@@ -288,5 +288,25 @@ class AppealsTestCase(unittest.TestCase):
             self.assertTrue(created.is_serviced)
 
 
+    def test_find_available_port_fallback(self):
+        """Test finding available port when initial port is occupied."""
+        import socket
+        from run import is_port_available, find_available_port
+
+        # Create a dummy socket listening on an arbitrary free port
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.bind(('0.0.0.0', 0))
+            sock.listen(1)
+            busy_port = sock.getsockname()[1]
+
+            # The busy_port must be unavailable
+            self.assertFalse(is_port_available(busy_port, '0.0.0.0'))
+
+            # find_available_port starting from busy_port must return > busy_port
+            next_port = find_available_port(start_port=busy_port, host='0.0.0.0')
+            self.assertGreater(next_port, busy_port)
+            self.assertTrue(is_port_available(next_port, '0.0.0.0'))
+
+
 if __name__ == '__main__':
     unittest.main()
