@@ -289,13 +289,36 @@ class AppealsTestCase(unittest.TestCase):
         self.assertIn('Округ'.encode('utf-8'), resp.data)
         self.assertIn('Управление'.encode('utf-8'), resp.data)
         self.assertIn('Тип обращения'.encode('utf-8'), resp.data)
+        self.assertIn('Кем зарегистрировано'.encode('utf-8'), resp.data)
+        self.assertIn('Тестовый Регистратор'.encode('utf-8'), resp.data)
         self.assertIn('Состоит на обслуживании'.encode('utf-8'), resp.data)
         self.assertIn('Срок ответа в количестве дней'.encode('utf-8'), resp.data)
 
-        # 2. Main page closed tab
+        # 2. Main page closed tab: also must display who registered the appeal
+        with self.app.app_context():
+            user = db_session.query(User).filter_by(username='test_registrator').first()
+            appeal_closed = Appeal(
+                number='TEST-CLOSED-REG-01',
+                reg_date=date.today(),
+                status='Закрыто',
+                source_id=self.source_id,
+                district_id=self.district_id,
+                appeal_type_id=self.type_id,
+                topic_id=self.topic_id,
+                created_by_id=user.id,
+                created_at=datetime.now(),
+                closed_at=datetime.now(),
+                closed_by_id=user.id
+            )
+            db_session.add(appeal_closed)
+            db_session.commit()
+
         resp_closed = self.client.get('/?tab=closed')
         self.assertEqual(resp_closed.status_code, 200)
         self.assertIn('Закрытые обращения'.encode('utf-8'), resp_closed.data)
+        self.assertIn('Кем зарегистрировано'.encode('utf-8'), resp_closed.data)
+        self.assertIn('Тестовый Регистратор'.encode('utf-8'), resp_closed.data)
+        self.assertIn('TEST-CLOSED-REG-01'.encode('utf-8'), resp_closed.data)
 
         # 3. Filter by number
         resp_filt = self.client.get('/?tab=active&number=FILTER-99')

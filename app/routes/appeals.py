@@ -25,6 +25,7 @@ def index():
     search_district_id = request.args.get('district_id', '').strip()
     search_type_id = request.args.get('type_id', '').strip()
     search_topic_id = request.args.get('topic_id', '').strip()
+    search_created_by_id = request.args.get('created_by_id', '').strip()
     search_deadline_filter = request.args.get('deadline_filter', '').strip()
     search_exact_days = request.args.get('exact_days', '').strip()
 
@@ -51,6 +52,9 @@ def index():
 
         if search_topic_id and search_topic_id.isdigit():
             q = q.filter(Appeal.topic_id == int(search_topic_id))
+
+        if search_created_by_id and search_created_by_id.isdigit():
+            q = q.filter(Appeal.created_by_id == int(search_created_by_id))
 
         # Deadline / Days to answer filter
         today = date.today()
@@ -93,6 +97,7 @@ def index():
     managements = db_session.query(Management).filter_by(is_active=True).order_by(Management.name).all()
     appeal_types = db_session.query(AppealType).filter_by(is_active=True).order_by(AppealType.name).all()
     topics = db_session.query(Topic).filter_by(is_active=True).order_by(Topic.name).all()
+    registrators = db_session.query(User).filter_by(is_active=True).order_by(User.full_name).all()
 
     return render_template(
         'appeals/list.html',
@@ -105,6 +110,7 @@ def index():
         managements=managements,
         appeal_types=appeal_types,
         topics=topics,
+        registrators=registrators,
         search_number=search_number,
         search_reg_date=search_reg_date,
         search_reg_date_eur=format_date_eur(parsed_reg_date) if parsed_reg_date else '',
@@ -112,6 +118,7 @@ def index():
         search_district_id=search_district_id,
         search_type_id=search_type_id,
         search_topic_id=search_topic_id,
+        search_created_by_id=search_created_by_id,
         search_deadline_filter=search_deadline_filter,
         search_exact_days=search_exact_days,
         today=date.today(),
