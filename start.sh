@@ -7,8 +7,9 @@ set -e
 #   1. Проверку конфигурации .env
 #   2. Проверку и активацию / автоустановку виртуального окружения (Python + psycopg2)
 #   3. Проверку и запуск службы PostgreSQL
-#   4. Пересоздание базы данных и таблиц (если уже есть — удаляет и создает с нуля)
-#   5. Запуск веб-сервера на доступном порту (с автопереключением, если 5000 занят)
+#   4. Проверку / создание выделенного пользователя БД (appeals_user)
+#   5. Пересоздание базы данных и таблиц (если уже есть — удаляет и создает с нуля)
+#   6. Запуск веб-сервера на доступном порту (с автопереключением, если 5000 занят)
 #
 # Использование:
 #   ./start.sh                - полный цикл (проверка окружения + пересоздание БД + запуск)
@@ -38,7 +39,7 @@ echo "  Система регистрации обращений граждан 
 echo "=========================================================="
 
 # 1. Проверка конфигурации .env
-echo "[1/5] Проверка конфигурационного файла .env..."
+echo "[1/6] Проверка конфигурационного файла .env..."
 if [ ! -f .env ]; then
     if [ -f .env.example ]; then
         echo "  -> Файл .env не найден. Копирование из .env.example..."
@@ -53,7 +54,7 @@ else
 fi
 
 # 2. Проверка и настройка окружения Python (проверка psycopg2, Flask, etc.)
-echo "[2/5] Проверка окружения Python и зависимостей..."
+echo "[2/6] Проверка окружения Python и зависимостей..."
 
 VENV_DIR=""
 if [ -d "$SCRIPT_DIR/venv" ] && [ -f "$SCRIPT_DIR/venv/bin/activate" ]; then
@@ -91,7 +92,6 @@ else
             "$PYTHON_CMD" -m pip install -r requirements.txt
             echo "  -> Виртуальное окружение успешно создано и настроено."
         else
-            # Если python3-venv не установлен в ОС
             echo "  -> Попытка прямой установки зависимостей через pip..."
             pip3 install -r requirements.txt --break-system-packages 2>/dev/null || \
             pip install -r requirements.txt --break-system-packages 2>/dev/null || \
@@ -120,7 +120,7 @@ fi
 echo "  -> Модуль psycopg2 и зависимости проверены успешно."
 
 # 3. Проверка и запуск службы PostgreSQL
-echo "[3/5] Проверка работы PostgreSQL..."
+echo "[3/6] Проверка работы PostgreSQL..."
 PG_RUNNING=false
 
 if "$PYTHON_CMD" -c "import socket; s = socket.socket(); s.settimeout(1); s.connect(('127.0.0.1', 5432)); s.close()" 2>/dev/null; then
@@ -135,19 +135,28 @@ if [ "$PG_RUNNING" = false ]; then
     if [ -d "$HOME/pgdata" ] && command -v pg_ctl &> /dev/null; then
         pg_ctl -D "$HOME/pgdata" -l "$HOME/pgdata/logfile" start 2>/dev/null || true
     fi
+    if [ -d "$SCRIPT_DIR/.pgdata" ] && command -v pg_ctl &> /dev/null; then
+        pg_ctl -D "$SCRIPT_DIR/.pgdata" -l "$SCRIPT_DIR/.pgdata/logfile" start 2>/dev/null || true
+    fi
     sleep 2
 fi
 echo "  -> Служба PostgreSQL готова к работе."
 
-# 4. Пересоздание базы данных и таблиц
-if [ "$RECREATE_DB" = true ]; then
-    echo "[4/5] Инициализация базы данных PostgreSQL (проверка и пересоздание)..."
-    "$PYTHON_CMD" init_db.py
-else
-    echo "[4/5] Пересоздание БД пропущено (флаг --no-recreate)."
+# 4. Проверка / создание пользователя базы данных
+echo "[4/6] Проверка выделенного пользователя базы данных..."
+if [ -f "$SCRIPT_DIR/create_db_user.sh" ]; then
+    bash "$SCRIPT_DIR/create_db_user.sh" 2>/dev/null || true
 fi
 
-# 5. Запуск веб-приложения Flask на доступном порту
-echo "[5/5] Запуск веб-сервера..."
+# 5. Пересоздание базы данных и таблиц
+if [ "$RECREATE_DB" = true ]; then
+    echo "[5/6] Инициализация базы данных PostgreSQL (проверка и пересоздание)..."
+    "$PYTHON_CMD" init_db.py
+else
+    echo "[5/6] Пересоздание БД пропущено (флаг --no-recreate)."
+fi
+
+# 6. Запуск веб-приложения Flask на доступном порту
+echo "[6/6] Запуск веб-сервера..."
 echo "=========================================================="
 exec "$PYTHON_CMD" run.py
