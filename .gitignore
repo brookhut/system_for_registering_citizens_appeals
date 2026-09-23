@@ -9,3 +9,6 @@ ENV/
 .env.local
 .DS_Store
 instance/
+
+.pgbin/
+.pgdata/

@@ -67,6 +67,11 @@ if [ -n "$VENV_DIR" ]; then
     source "$VENV_DIR/bin/activate"
     PYTHON_CMD="$VENV_DIR/bin/python3"
     echo "  -> Активировано виртуальное окружение: $VENV_DIR"
+    # Проверяем, установлены ли зависимости в этом venv
+    if ! "$PYTHON_CMD" -c "import psycopg2" 2>/dev/null; then
+        echo "  -> Зависимости в venv не установлены. Установка из requirements.txt..."
+        "$PYTHON_CMD" -m pip install -r requirements.txt
+    fi
 else
     # Проверяем, есть ли psycopg2 в системном Python
     if python3 -c "import psycopg2" 2>/dev/null; then
