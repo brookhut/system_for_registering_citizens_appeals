@@ -1,5 +1,11 @@
+import os
 import unittest
 from datetime import date, datetime, timedelta
+
+# Ensure in-memory SQLite is used during automated test runs
+os.environ['DATABASE_URL'] = 'sqlite:///:memory:'
+os.environ['TESTING'] = 'true'
+
 from app import create_app
 from app.config import Config
 from app.database import db_session, init_db
@@ -369,6 +375,27 @@ class AppealsTestCase(unittest.TestCase):
             next_port = find_available_port(start_port=busy_port, host='0.0.0.0')
             self.assertGreater(next_port, busy_port)
             self.assertTrue(is_port_available(next_port, '0.0.0.0'))
+
+    def test_long_topic_name_support(self):
+        """Test that dictionary names longer than 128 chars (e.g. 135+ chars) can be saved and queried."""
+        long_name = 'Жалоба на социального работника (нарушение этики общения, некачественное выполнение услуг, несоблюдение графика обслуживания и иные)'
+        self.assertGreater(len(long_name), 128)
+
+        self.login(Config.SUPERADMIN_USERNAME, Config.SUPERADMIN_PASSWORD)
+
+        # Create topic via admin web route
+        resp = self.client.post('/admin/dictionaries/topics/create', data={
+            'name': long_name,
+            'code': 'Т-15',
+            'is_active': 'on'
+        }, follow_redirects=True)
+        self.assertEqual(resp.status_code, 200)
+
+        # Verify DB record
+        with self.app.app_context():
+            topic = db_session.query(Topic).filter_by(code='Т-15').first()
+            self.assertIsNotNone(topic)
+            self.assertEqual(topic.name, long_name)
 
 
 if __name__ == '__main__':

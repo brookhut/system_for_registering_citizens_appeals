@@ -32,56 +32,56 @@ CREATE INDEX ix_users_username ON users (username);
 -- 2. Справочник: Источники поступления
 CREATE TABLE sources (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(128) UNIQUE NOT NULL,
-    code VARCHAR(32),
+    name VARCHAR(512) UNIQUE NOT NULL,
+    code VARCHAR(64),
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- 3. Справочник: Округа
 CREATE TABLE districts (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(128) UNIQUE NOT NULL,
-    code VARCHAR(32),
+    name VARCHAR(512) UNIQUE NOT NULL,
+    code VARCHAR(64),
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- 4. Справочник: Управления
 CREATE TABLE managements (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(128) UNIQUE NOT NULL,
-    code VARCHAR(32),
+    name VARCHAR(512) UNIQUE NOT NULL,
+    code VARCHAR(64),
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- 5. Справочник: Участки
 CREATE TABLE plots (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(128) UNIQUE NOT NULL,
-    code VARCHAR(32),
+    name VARCHAR(512) UNIQUE NOT NULL,
+    code VARCHAR(64),
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- 6. Справочник: Типы обращений
 CREATE TABLE appeal_types (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(128) UNIQUE NOT NULL,
-    code VARCHAR(32),
+    name VARCHAR(512) UNIQUE NOT NULL,
+    code VARCHAR(64),
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- 7. Справочник: Тематики обращений
 CREATE TABLE topics (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(128) UNIQUE NOT NULL,
-    code VARCHAR(32),
+    name VARCHAR(512) UNIQUE NOT NULL,
+    code VARCHAR(64),
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- 8. Справочник: Результаты рассмотрения
 CREATE TABLE results (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(128) UNIQUE NOT NULL,
-    code VARCHAR(32),
+    name VARCHAR(512) UNIQUE NOT NULL,
+    code VARCHAR(64),
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 

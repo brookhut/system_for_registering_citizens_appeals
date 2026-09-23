@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, scoped_session, sessionmaker
 from app.config import Config
 
@@ -12,7 +12,38 @@ Base.query = db_session.query_property()
 def init_db():
     import app.models  # noqa: F401
     Base.metadata.create_all(bind=engine)
+    upgrade_schema()
     ensure_superadmin()
+
+
+def upgrade_schema():
+    """
+    Автоматическое расширение длины колонок наименований и кодов до VARCHAR(512).
+    Позволяет добавлять длинные наименования тематик и управлений без ошибок StringDataRightTruncation.
+    """
+    queries = [
+        "ALTER TABLE topics ALTER COLUMN name TYPE VARCHAR(512);",
+        "ALTER TABLE topics ALTER COLUMN code TYPE VARCHAR(64);",
+        "ALTER TABLE managements ALTER COLUMN name TYPE VARCHAR(512);",
+        "ALTER TABLE managements ALTER COLUMN code TYPE VARCHAR(64);",
+        "ALTER TABLE results ALTER COLUMN name TYPE VARCHAR(512);",
+        "ALTER TABLE results ALTER COLUMN code TYPE VARCHAR(64);",
+        "ALTER TABLE sources ALTER COLUMN name TYPE VARCHAR(512);",
+        "ALTER TABLE sources ALTER COLUMN code TYPE VARCHAR(64);",
+        "ALTER TABLE districts ALTER COLUMN name TYPE VARCHAR(512);",
+        "ALTER TABLE districts ALTER COLUMN code TYPE VARCHAR(64);",
+        "ALTER TABLE plots ALTER COLUMN name TYPE VARCHAR(512);",
+        "ALTER TABLE plots ALTER COLUMN code TYPE VARCHAR(64);",
+        "ALTER TABLE appeal_types ALTER COLUMN name TYPE VARCHAR(512);",
+        "ALTER TABLE appeal_types ALTER COLUMN code TYPE VARCHAR(64);",
+    ]
+    with engine.connect() as conn:
+        for q in queries:
+            try:
+                conn.execute(text(q))
+                conn.commit()
+            except Exception:
+                pass
 
 
 def ensure_superadmin():

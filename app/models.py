@@ -64,8 +64,8 @@ class Source(Base):
     __tablename__ = 'sources'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(128), unique=True, nullable=False)
-    code = Column(String(32), nullable=True)
+    name = Column(String(512), unique=True, nullable=False)
+    code = Column(String(64), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
     appeals = relationship('Appeal', back_populates='source')
@@ -79,8 +79,8 @@ class District(Base):
     __tablename__ = 'districts'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(128), unique=True, nullable=False)
-    code = Column(String(32), nullable=True)
+    name = Column(String(512), unique=True, nullable=False)
+    code = Column(String(64), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
     managements = relationship(
@@ -99,8 +99,8 @@ class Management(Base):
     __tablename__ = 'managements'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(128), unique=True, nullable=False)
-    code = Column(String(32), nullable=True)
+    name = Column(String(512), unique=True, nullable=False)
+    code = Column(String(64), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
     # В управление может входить несколько округов
@@ -126,8 +126,8 @@ class Plot(Base):
     __tablename__ = 'plots'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(128), unique=True, nullable=False)
-    code = Column(String(32), nullable=True)
+    name = Column(String(512), unique=True, nullable=False)
+    code = Column(String(64), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
     managements = relationship(
@@ -146,8 +146,8 @@ class AppealType(Base):
     __tablename__ = 'appeal_types'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(128), unique=True, nullable=False)
-    code = Column(String(32), nullable=True)
+    name = Column(String(512), unique=True, nullable=False)
+    code = Column(String(64), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
     appeals = relationship('Appeal', back_populates='appeal_type')
@@ -161,8 +161,8 @@ class Topic(Base):
     __tablename__ = 'topics'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(128), unique=True, nullable=False)
-    code = Column(String(32), nullable=True)
+    name = Column(String(512), unique=True, nullable=False)
+    code = Column(String(64), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
     appeals = relationship('Appeal', back_populates='topic')
@@ -176,8 +176,8 @@ class Result(Base):
     __tablename__ = 'results'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(128), unique=True, nullable=False)
-    code = Column(String(32), nullable=True)
+    name = Column(String(512), unique=True, nullable=False)
+    code = Column(String(64), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
     appeals = relationship('Appeal', back_populates='result')
