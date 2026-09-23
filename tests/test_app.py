@@ -397,6 +397,16 @@ class AppealsTestCase(unittest.TestCase):
             self.assertIsNotNone(topic)
             self.assertEqual(topic.name, long_name)
 
+    def test_topic_search_field_in_appeal_form(self):
+        """Test that appeal creation form contains the topic search filter field."""
+        self.login('test_registrator', 'TestPass2026!')
+        resp = self.client.get('/appeals/new')
+        self.assertEqual(resp.status_code, 200)
+        # Ensure search input and topic select are present
+        self.assertIn(b'id="topic_search"', resp.data)
+        self.assertIn(b'id="topic_search_clear"', resp.data)
+        self.assertIn(b'id="topic_id"', resp.data)
+
 
 if __name__ == '__main__':
     unittest.main()

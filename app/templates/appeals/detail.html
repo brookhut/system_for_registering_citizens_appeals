@@ -237,6 +237,17 @@
                                 <label for="topic_id" class="form-label">
                                     Тематика обращения <span class="required-asterisk">*</span>
                                 </label>
+                                {% if not appeal.is_closed %}
+                                <div class="input-group input-group-sm mb-1">
+                                    <span class="input-group-text bg-white text-muted"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" id="topic_search" 
+                                           placeholder="Поиск по словам для сужения списка..." 
+                                           autocomplete="off" title="Введите слова для фильтрации списка тематик">
+                                    <button class="btn btn-outline-secondary" type="button" id="topic_search_clear" title="Сбросить поиск">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                                {% endif %}
                                 <select class="form-select {% if appeal.is_closed %}readonly-field{% endif %}" 
                                         id="topic_id" name="topic_id"
                                         {% if appeal.is_closed %}disabled{% else %}required{% endif %}>
@@ -246,6 +257,12 @@
                                         </option>
                                     {% endfor %}
                                 </select>
+                                {% if not appeal.is_closed %}
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="text-muted" id="topic_search_hint">Введите слова, чтобы уменьшить список</small>
+                                    <small class="text-muted" id="topic_search_count"></small>
+                                </div>
+                                {% endif %}
                             </div>
 
                             <!-- Пол заявителя (мужской, женский, опционально) -->

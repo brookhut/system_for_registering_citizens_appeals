@@ -117,4 +117,107 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    // 4. Поиск и фильтрация списка тематик по словам при создании и редактировании обращения
+    const topicSelect = document.getElementById('topic_id');
+    const topicSearch = document.getElementById('topic_search');
+    const topicSearchClear = document.getElementById('topic_search_clear');
+    const topicSearchCount = document.getElementById('topic_search_count');
+
+    if (topicSelect && topicSearch) {
+        // Кешируем исходный список вариантов
+        const allTopicOptions = [];
+        for (let i = 0; i < topicSelect.options.length; i++) {
+            const opt = topicSelect.options[i];
+            allTopicOptions.push({
+                value: opt.value,
+                text: opt.textContent.trim(),
+                selected: opt.selected
+            });
+        }
+
+        const totalTopicsCount = allTopicOptions.filter(o => o.value !== '').length;
+        if (topicSearchCount) {
+            topicSearchCount.textContent = `Всего: ${totalTopicsCount}`;
+        }
+
+        function filterTopics() {
+            const query = topicSearch.value.trim().toLowerCase();
+            const words = query ? query.split(/\s+/).filter(Boolean) : [];
+            const currentSelectedVal = topicSelect.value;
+
+            const placeholder = allTopicOptions.find(o => o.value === '');
+            const items = allTopicOptions.filter(o => o.value !== '');
+
+            // Все введенные пользователем слова должны входить в название тематики (в любом порядке)
+            const matchedItems = items.filter(item => {
+                if (words.length === 0) return true;
+                const lowerText = item.text.toLowerCase();
+                return words.every(word => lowerText.includes(word));
+            });
+
+            // Пересобираем выпадающий список
+            topicSelect.innerHTML = '';
+            if (placeholder) {
+                const pOpt = document.createElement('option');
+                pOpt.value = placeholder.value;
+                pOpt.textContent = placeholder.text;
+                topicSelect.appendChild(pOpt);
+            }
+
+            let matchFoundForCurrent = false;
+            matchedItems.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.value;
+                opt.textContent = item.text;
+                if (item.value === currentSelectedVal) {
+                    opt.selected = true;
+                    matchFoundForCurrent = true;
+                }
+                topicSelect.appendChild(opt);
+            });
+
+            // Если текущее выбранное значение не входит в отфильтрованный список
+            if (!matchFoundForCurrent) {
+                if (matchedItems.length === 1 && words.length > 0) {
+                    // Если совпадение ровно одно, автоматически выбираем его
+                    topicSelect.value = matchedItems[0].value;
+                } else if (words.length > 0 && placeholder) {
+                    topicSelect.value = '';
+                }
+            }
+
+            // Обновляем индикатор количества найденных записей
+            if (topicSearchCount) {
+                if (words.length > 0) {
+                    topicSearchCount.textContent = `Найдено: ${matchedItems.length} из ${items.length}`;
+                    topicSearchCount.className = matchedItems.length === 0 ? 'text-danger fw-bold' : 'text-primary fw-bold';
+                } else {
+                    topicSearchCount.textContent = `Всего: ${items.length}`;
+                    topicSearchCount.className = 'text-muted';
+                }
+            }
+        }
+
+        topicSearch.addEventListener('input', filterTopics);
+
+        // Предотвращаем случайную отправку всей формы при нажатии Enter в строке поиска
+        topicSearch.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                topicSelect.focus();
+            } else if (e.key === 'Escape') {
+                topicSearch.value = '';
+                filterTopics();
+            }
+        });
+
+        if (topicSearchClear) {
+            topicSearchClear.addEventListener('click', function () {
+                topicSearch.value = '';
+                filterTopics();
+                topicSearch.focus();
+            });
+        }
+    }
 });

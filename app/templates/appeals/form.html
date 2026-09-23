@@ -158,6 +158,15 @@
                                 <label for="topic_id" class="form-label">
                                     Тематика обращения <span class="required-asterisk">*</span>
                                 </label>
+                                <div class="input-group input-group-sm mb-1">
+                                    <span class="input-group-text bg-white text-muted"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" id="topic_search" 
+                                           placeholder="Поиск по словам для сужения списка..." 
+                                           autocomplete="off" title="Введите слова для фильтрации списка тематик">
+                                    <button class="btn btn-outline-secondary" type="button" id="topic_search_clear" title="Сбросить поиск">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
                                 <select class="form-select" id="topic_id" name="topic_id" required>
                                     <option value="">-- Выберите тематику --</option>
                                     {% for top in topics %}
@@ -166,6 +175,10 @@
                                         </option>
                                     {% endfor %}
                                 </select>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <small class="text-muted" id="topic_search_hint">Введите слова, чтобы уменьшить список</small>
+                                    <small class="text-muted" id="topic_search_count"></small>
+                                </div>
                             </div>
 
                             <!-- 7. Пол заявителя (мужской, женский, опционально) -->
