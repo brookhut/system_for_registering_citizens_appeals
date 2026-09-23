@@ -346,9 +346,9 @@
                         <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
                             <i class="bi bi-stopwatch me-1"></i> Контрольные сроки и обслуживание
                         </h6>
-                        <div class="row g-3 align-items-center">
+                        <div class="row g-3">
                             <!-- Контрольные сроки -->
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-lg-4">
                                 <label for="deadline_date" class="form-label">
                                     Контрольные сроки <small class="text-muted fw-normal">(дата поступления ответа)</small>
                                 </label>
@@ -379,8 +379,8 @@
                             </div>
 
                             <!-- Не состоит на обслуживании (чекбокс) -->
-                            <div class="col-12 col-md-6">
-                                <div class="form-check mt-3 p-3 bg-light rounded border">
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="form-check p-3 bg-light rounded border h-100">
                                     <input class="form-check-input ms-0 me-2" type="checkbox" id="not_serviced" name="not_serviced"
                                            {% if appeal.not_serviced %}checked{% endif %}
                                            {% if appeal.is_closed %}disabled{% endif %}>
@@ -388,12 +388,22 @@
                                         Не состоит на обслуживании
                                     </label>
                                     <div class="text-muted small ps-4 ms-2">
-                                        В общем списке отображается:
-                                        {% if appeal.is_serviced %}
-                                            <span class="badge badge-serviced-yes">Состоит: Да</span>
-                                        {% else %}
-                                            <span class="badge badge-serviced-no">Состоит: Нет</span>
-                                        {% endif %}
+                                        В общем списке: «Состоит на обслуживании: Нет».
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Состоит на обслуживании в НКО (чекбокс) -->
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="form-check p-3 bg-light rounded border h-100">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" id="serviced_in_nko" name="serviced_in_nko"
+                                           {% if appeal.serviced_in_nko %}checked{% endif %}
+                                           {% if appeal.is_closed %}disabled{% endif %}>
+                                    <label class="form-check-label fw-semibold text-dark" for="serviced_in_nko">
+                                        Состоит на обслуживании в НКО
+                                    </label>
+                                    <div class="text-muted small ps-4 ms-2">
+                                        В общем списке: «Состоит на обслуживании: В НКО».
                                     </div>
                                 </div>
                             </div>

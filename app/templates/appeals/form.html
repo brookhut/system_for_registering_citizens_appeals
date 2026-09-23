@@ -254,9 +254,9 @@
                         <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
                             <i class="bi bi-stopwatch me-1"></i> Контрольные сроки и обслуживание
                         </h6>
-                        <div class="row g-3 align-items-center">
+                        <div class="row g-3">
                             <!-- 13. Контрольные сроки (дата когда должен поступить ответ) -->
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-lg-4">
                                 <label for="deadline_date" class="form-label">
                                     Контрольные сроки <small class="text-muted fw-normal">(дата поступления ответа)</small>
                                 </label>
@@ -269,15 +269,29 @@
                             </div>
 
                             <!-- 14. Не состоит на обслуживании (чекбокс) -->
-                            <div class="col-12 col-md-6">
-                                <div class="form-check mt-3 p-3 bg-light rounded border">
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="form-check p-3 bg-light rounded border h-100">
                                     <input class="form-check-input ms-0 me-2" type="checkbox" id="not_serviced" name="not_serviced"
                                            {% if form_data.get('not_serviced') %}checked{% endif %}>
                                     <label class="form-check-label fw-semibold text-dark" for="not_serviced">
                                         Не состоит на обслуживании
                                     </label>
                                     <div class="text-muted small ps-4 ms-2">
-                                        Если отмечено, в списке обращений будет указано «Состоит на обслуживании: Нет».
+                                        В списке: «Состоит на обслуживании: Нет».
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 15. Состоит на обслуживании в НКО (чекбокс) -->
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="form-check p-3 bg-light rounded border h-100">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" id="serviced_in_nko" name="serviced_in_nko"
+                                           {% if form_data.get('serviced_in_nko') %}checked{% endif %}>
+                                    <label class="form-check-label fw-semibold text-dark" for="serviced_in_nko">
+                                        Состоит на обслуживании в НКО
+                                    </label>
+                                    <div class="text-muted small ps-4 ms-2">
+                                        В списке: «Состоит на обслуживании: В НКО».
                                     </div>
                                 </div>
                             </div>

@@ -212,6 +212,7 @@ class Appeal(Base):
     # Deadline & Serviced Flag
     deadline_date = Column(Date, nullable=True, index=True)  # Контрольные сроки
     not_serviced = Column(Boolean, default=False, nullable=False)  # Не состоит на обслуживании
+    serviced_in_nko = Column(Boolean, default=False, nullable=False)  # Состоит на обслуживании в НКО
 
     # Details & Comments
     comment = Column(Text, nullable=True)

@@ -430,6 +430,42 @@ class AppealsTestCase(unittest.TestCase):
         self.assertIn(b'id="topic_search_clear"', resp.data)
         self.assertIn(b'id="topic_id"', resp.data)
 
+    def test_serviced_in_nko_checkbox(self):
+        """Test 'Состоит на обслуживании в НКО' checkbox creation, DB saving and display."""
+        self.login('test_registrator', 'TestPass2026!')
+
+        # 1. Verify checkboxes in form
+        resp_form = self.client.get('/appeals/new')
+        self.assertEqual(resp_form.status_code, 200)
+        self.assertIn(b'id="not_serviced"', resp_form.data)
+        self.assertIn(b'id="serviced_in_nko"', resp_form.data)
+        self.assertIn('Состоит на обслуживании в НКО'.encode('utf-8'), resp_form.data)
+
+        # 2. Create appeal with serviced_in_nko checked
+        today = date.today()
+        resp = self.client.post('/appeals/new', data={
+            'reg_date': today.strftime('%Y-%m-%d'),
+            'number': 'TEST-NKO-2026',
+            'source_id': self.source_id,
+            'district_id': self.district_id,
+            'appeal_type_id': self.type_id,
+            'topic_id': self.topic_id,
+            'serviced_in_nko': 'on',
+        }, follow_redirects=True)
+        self.assertEqual(resp.status_code, 200)
+
+        # 3. Verify DB record
+        with self.app.app_context():
+            appeal = db_session.query(Appeal).filter_by(number='TEST-NKO-2026').first()
+            self.assertIsNotNone(appeal)
+            self.assertTrue(appeal.serviced_in_nko)
+            self.assertFalse(appeal.not_serviced)
+
+        # 4. Verify main page displays 'В НКО' badge
+        resp_list = self.client.get('/?tab=active')
+        self.assertEqual(resp_list.status_code, 200)
+        self.assertIn('В НКО'.encode('utf-8'), resp_list.data)
+
 
 if __name__ == '__main__':
     unittest.main()

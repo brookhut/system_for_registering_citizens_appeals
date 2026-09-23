@@ -36,6 +36,7 @@ def upgrade_schema():
         "ALTER TABLE plots ALTER COLUMN code TYPE VARCHAR(64);",
         "ALTER TABLE appeal_types ALTER COLUMN name TYPE VARCHAR(512);",
         "ALTER TABLE appeal_types ALTER COLUMN code TYPE VARCHAR(64);",
+        "ALTER TABLE appeals ADD COLUMN IF NOT EXISTS serviced_in_nko BOOLEAN NOT NULL DEFAULT FALSE;",
     ]
     with engine.connect() as conn:
         for q in queries:

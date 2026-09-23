@@ -120,6 +120,7 @@ CREATE TABLE appeals (
     
     deadline_date DATE,
     not_serviced BOOLEAN NOT NULL DEFAULT FALSE,
+    serviced_in_nko BOOLEAN NOT NULL DEFAULT FALSE,
     comment TEXT,
     
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),

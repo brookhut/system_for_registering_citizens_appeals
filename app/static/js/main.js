@@ -220,4 +220,21 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     }
+
+    // 5. Взаимоисключение чекбоксов обслуживания ("Не состоит" и "Состоит в НКО")
+    const notServicedCheckbox = document.getElementById('not_serviced');
+    const servicedInNkoCheckbox = document.getElementById('serviced_in_nko');
+
+    if (notServicedCheckbox && servicedInNkoCheckbox) {
+        notServicedCheckbox.addEventListener('change', function () {
+            if (this.checked) {
+                servicedInNkoCheckbox.checked = false;
+            }
+        });
+        servicedInNkoCheckbox.addEventListener('change', function () {
+            if (this.checked) {
+                notServicedCheckbox.checked = false;
+            }
+        });
+    }
 });

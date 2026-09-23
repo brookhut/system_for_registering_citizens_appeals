@@ -254,15 +254,19 @@
                             {% endif %}
                         </td>
 
-                        <!-- 6. Состоит на обслуживании (Да / Нет) -->
+                        <!-- 6. Состоит на обслуживании (Да / Нет / В НКО) -->
                         <td class="text-center">
-                            {% if a.is_serviced %}
-                                <span class="badge badge-serviced-yes px-3 py-2 rounded-pill">
-                                    <i class="bi bi-check-circle-fill me-1"></i> Да
+                            {% if a.serviced_in_nko %}
+                                <span class="badge badge-serviced-nko px-3 py-2 rounded-pill" title="Состоит на обслуживании в НКО">
+                                    <i class="bi bi-building me-1"></i> В НКО
+                                </span>
+                            {% elif a.not_serviced %}
+                                <span class="badge badge-serviced-no px-3 py-2 rounded-pill" title="Не состоит на обслуживании">
+                                    <i class="bi bi-x-circle-fill me-1"></i> Нет
                                 </span>
                             {% else %}
-                                <span class="badge badge-serviced-no px-3 py-2 rounded-pill">
-                                    <i class="bi bi-x-circle-fill me-1"></i> Нет
+                                <span class="badge badge-serviced-yes px-3 py-2 rounded-pill" title="Состоит на обслуживании">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Да
                                 </span>
                             {% endif %}
                         </td>

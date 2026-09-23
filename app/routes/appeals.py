@@ -200,6 +200,9 @@ def create():
         # 14. Не состоит на обслуживании (checkbox)
         not_serviced = bool(request.form.get('not_serviced'))
 
+        # Состоит на обслуживании в НКО (checkbox)
+        serviced_in_nko = bool(request.form.get('serviced_in_nko'))
+
         # 15. Комментарий (optional)
         comment = request.form.get('comment', '').strip()
 
@@ -238,6 +241,7 @@ def create():
             result_id=result_id_val,
             deadline_date=deadline_date,
             not_serviced=not_serviced,
+            serviced_in_nko=serviced_in_nko,
             comment=comment or None,
             created_by_id=current_user.id,
             created_at=datetime.now(),
@@ -388,6 +392,7 @@ def edit(appeal_id):
 
     # 14. Не состоит на обслуживании
     not_serviced = bool(request.form.get('not_serviced'))
+    serviced_in_nko = bool(request.form.get('serviced_in_nko'))
 
     # 15. Комментарий
     comment = request.form.get('comment', '').strip()
@@ -412,6 +417,7 @@ def edit(appeal_id):
     appeal.result_id = result_id_val
     appeal.deadline_date = deadline_date
     appeal.not_serviced = not_serviced
+    appeal.serviced_in_nko = serviced_in_nko
     appeal.comment = comment or None
 
     db_session.commit()
