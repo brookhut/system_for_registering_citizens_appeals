@@ -26,10 +26,12 @@ def index():
     search_type_id = request.args.get('type_id', '').strip()
     search_topic_id = request.args.get('topic_id', '').strip()
     search_created_by_id = request.args.get('created_by_id', '').strip()
+    search_deadline_date = request.args.get('deadline_date', '').strip()
     search_deadline_filter = request.args.get('deadline_filter', '').strip()
     search_exact_days = request.args.get('exact_days', '').strip()
 
     parsed_reg_date = parse_date(search_reg_date) if search_reg_date else None
+    parsed_deadline_date = parse_date(search_deadline_date) if search_deadline_date else None
 
     # Base query
     def build_query(target_status):
@@ -56,9 +58,11 @@ def index():
         if search_created_by_id and search_created_by_id.isdigit():
             q = q.filter(Appeal.created_by_id == int(search_created_by_id))
 
-        # Deadline / Days to answer filter
+        # Deadline filter: by specific date from calendar or by period/days
         today = date.today()
-        if search_exact_days and (search_exact_days.isdigit() or (search_exact_days.startswith('-') and search_exact_days[1:].isdigit())):
+        if parsed_deadline_date:
+            q = q.filter(Appeal.deadline_date == parsed_deadline_date)
+        elif search_exact_days and (search_exact_days.isdigit() or (search_exact_days.startswith('-') and search_exact_days[1:].isdigit())):
             exact_d = int(search_exact_days)
             target_deadline = today + timedelta(days=exact_d)
             q = q.filter(Appeal.deadline_date == target_deadline)
@@ -119,6 +123,8 @@ def index():
         search_type_id=search_type_id,
         search_topic_id=search_topic_id,
         search_created_by_id=search_created_by_id,
+        search_deadline_date=search_deadline_date,
+        search_deadline_date_eur=format_date_eur(parsed_deadline_date) if parsed_deadline_date else '',
         search_deadline_filter=search_deadline_filter,
         search_exact_days=search_exact_days,
         today=date.today(),

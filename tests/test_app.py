@@ -466,6 +466,57 @@ class AppealsTestCase(unittest.TestCase):
         self.assertEqual(resp_list.status_code, 200)
         self.assertIn('В НКО'.encode('utf-8'), resp_list.data)
 
+    def test_filter_by_specific_deadline_date(self):
+        """Test filtering appeals by specific deadline date selected from calendar."""
+        self.login('test_registrator', 'TestPass2026!')
+        today = date.today()
+        target_date_1 = today + timedelta(days=5)
+        target_date_2 = today + timedelta(days=12)
+
+        # Create two appeals with different deadline dates
+        with self.app.app_context():
+            user = db_session.query(User).filter_by(username='test_registrator').first()
+            appeal_1 = Appeal(
+                number='TEST-DEADLINE-05',
+                reg_date=today,
+                deadline_date=target_date_1,
+                status='В работе',
+                source_id=self.source_id,
+                district_id=self.district_id,
+                appeal_type_id=self.type_id,
+                topic_id=self.topic_id,
+                created_by_id=user.id,
+                created_at=datetime.now()
+            )
+            appeal_2 = Appeal(
+                number='TEST-DEADLINE-12',
+                reg_date=today,
+                deadline_date=target_date_2,
+                status='В работе',
+                source_id=self.source_id,
+                district_id=self.district_id,
+                appeal_type_id=self.type_id,
+                topic_id=self.topic_id,
+                created_by_id=user.id,
+                created_at=datetime.now()
+            )
+            db_session.add_all([appeal_1, appeal_2])
+            db_session.commit()
+
+        # 1. Filter by target_date_1
+        date_str_1 = target_date_1.strftime('%Y-%m-%d')
+        resp = self.client.get(f'/?tab=active&deadline_date={date_str_1}')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn(b'TEST-DEADLINE-05', resp.data)
+        self.assertNotIn(b'TEST-DEADLINE-12', resp.data)
+
+        # 2. Filter by target_date_2
+        date_str_2 = target_date_2.strftime('%Y-%m-%d')
+        resp2 = self.client.get(f'/?tab=active&deadline_date={date_str_2}')
+        self.assertEqual(resp2.status_code, 200)
+        self.assertIn(b'TEST-DEADLINE-12', resp2.data)
+        self.assertNotIn(b'TEST-DEADLINE-05', resp2.data)
+
 
 if __name__ == '__main__':
     unittest.main()
