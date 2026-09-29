@@ -82,6 +82,17 @@ def index():
 
         return q
 
+    # Pagination parameters (specifically for closed appeals, max 100)
+    page = request.args.get('page', 1, type=int)
+    if not page or page < 1:
+        page = 1
+
+    per_page = request.args.get('per_page', 25, type=int)
+    if not per_page or per_page < 1:
+        per_page = 25
+    elif per_page > 100:
+        per_page = 100
+
     # Counts
     active_query = build_query('В работе')
     closed_query = build_query('Закрыто')
@@ -92,8 +103,29 @@ def index():
     # Get records for current tab
     if tab == 'active':
         appeals = active_query.order_by(Appeal.deadline_date.asc().nulls_last(), Appeal.id.desc()).all()
+        total_items = active_count
+        total_pages = 1
+        start_item = 1 if active_count > 0 else 0
+        end_item = active_count
+        iter_pages = [1]
     else:
-        appeals = closed_query.order_by(Appeal.closed_at.desc().nulls_last(), Appeal.id.desc()).all()
+        total_items = closed_count
+        total_pages = max(1, (total_items + per_page - 1) // per_page)
+        if page > total_pages and total_items > 0:
+            page = total_pages
+        offset = (page - 1) * per_page
+        appeals = closed_query.order_by(Appeal.closed_at.desc().nulls_last(), Appeal.id.desc()).offset(offset).limit(per_page).all()
+        start_item = (page - 1) * per_page + 1 if total_items > 0 else 0
+        end_item = min(page * per_page, total_items)
+
+        # Pagination window
+        window_size = 2
+        iter_pages = []
+        for p in range(1, total_pages + 1):
+            if p == 1 or p == total_pages or (page - window_size <= p <= page + window_size):
+                iter_pages.append(p)
+            elif iter_pages and iter_pages[-1] is not None:
+                iter_pages.append(None)
 
     # Reference data for filter dropdowns
     sources = db_session.query(Source).filter_by(is_active=True).order_by(Source.name).all()
@@ -127,6 +159,13 @@ def index():
         search_deadline_date_eur=format_date_eur(parsed_deadline_date) if parsed_deadline_date else '',
         search_deadline_filter=search_deadline_filter,
         search_exact_days=search_exact_days,
+        page=page,
+        per_page=per_page,
+        total_pages=total_pages,
+        total_items=total_items,
+        start_item=start_item,
+        end_item=end_item,
+        iter_pages=iter_pages,
         today=date.today(),
     )
 

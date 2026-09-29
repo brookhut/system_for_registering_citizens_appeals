@@ -517,6 +517,56 @@ class AppealsTestCase(unittest.TestCase):
         self.assertIn(b'TEST-DEADLINE-12', resp2.data)
         self.assertNotIn(b'TEST-DEADLINE-05', resp2.data)
 
+    def test_closed_tab_pagination_and_max_100(self):
+        """Test closed appeals pagination, per_page selector and max 100 limit."""
+        self.login('test_registrator', 'TestPass2026!')
+        today = date.today()
+
+        with self.app.app_context():
+            user = db_session.query(User).filter_by(username='test_registrator').first()
+            # Create 25 closed appeals
+            closed_appeals = []
+            for i in range(1, 26):
+                a = Appeal(
+                    number=f'CLOSED-PG-{i:03d}',
+                    reg_date=today,
+                    status='Закрыто',
+                    source_id=self.source_id,
+                    district_id=self.district_id,
+                    appeal_type_id=self.type_id,
+                    topic_id=self.topic_id,
+                    created_by_id=user.id,
+                    created_at=datetime.now() - timedelta(minutes=100 - i),
+                    closed_at=datetime.now() - timedelta(minutes=50 - i),
+                    closed_by_id=user.id
+                )
+                closed_appeals.append(a)
+            db_session.add_all(closed_appeals)
+            db_session.commit()
+
+        # 1. Page 1 with per_page=10
+        resp1 = self.client.get('/?tab=closed&per_page=10&page=1')
+        self.assertEqual(resp1.status_code, 200)
+        self.assertIn(b'id="per_page_select"', resp1.data)
+        self.assertIn('Отображать по:'.encode('utf-8'), resp1.data)
+        self.assertIn('Показано'.encode('utf-8'), resp1.data)
+        self.assertIn('1–10'.encode('utf-8'), resp1.data)
+        # Verify pagination buttons exist
+        self.assertIn(b'page=2', resp1.data)
+        self.assertIn(b'page=3', resp1.data)
+
+        # 2. Page 2 with per_page=10
+        resp2 = self.client.get('/?tab=closed&per_page=10&page=2')
+        self.assertEqual(resp2.status_code, 200)
+        self.assertIn(b'page=1', resp2.data)
+
+        # 3. Test max limit: request per_page=500 -> capped at 100
+        resp_cap = self.client.get('/?tab=closed&per_page=500&page=1')
+        self.assertEqual(resp_cap.status_code, 200)
+        # All 25 items should fit on one page since 25 <= 100
+        self.assertIn(b'CLOSED-PG-001', resp_cap.data)
+        self.assertIn(b'CLOSED-PG-025', resp_cap.data)
+
 
 if __name__ == '__main__':
     unittest.main()
